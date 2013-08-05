@@ -5,7 +5,7 @@
   |  Y Y  \|  |  /|    |     / __ \_|  | \/\___ \ \  ___/ |  | \/
   |__|_|  /|____/ |____|    (____  /|__|  /____  > \___  >|__|   
         \/                       \/            \/      \/        
-  Copyright (C) 2004-2011 Ingo Berg
+  Copyright (C) 2004-2012 Ingo Berg
 
   Permission is hereby granted, free of charge, to any person obtaining a copy of this 
   software and associated documentation files (the "Software"), to deal in the Software
@@ -22,155 +22,299 @@
   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
 */
-
 #ifndef MU_PARSER_ERROR_H
 #define MU_PARSER_ERROR_H
 
 #include <cassert>
-#include <stdexcept>
 #include <string>
 #include <sstream>
 #include <vector>
-#include <memory>
 
-#include "muParserDef.h"
 
-/** \file 
-    \brief This file defines the error class used by the parser.
-*/
+MUP_NAMESPACE_START
 
-namespace mu
-{
+  //-----------------------------------------------------------------------------------------------
+  /** \brief A class that handles the error messages.
+  */
+  template<typename TString>
+  class ParserErrorMsg
+  {
+  public:
 
-/** \brief Error codes. */
-enum EErrorCodes
-{
-  // Formula syntax errors
-  ecUNEXPECTED_OPERATOR    = 0,  ///< Unexpected binary operator found
-  ecUNASSIGNABLE_TOKEN     = 1,  ///< Token cant be identified.
-  ecUNEXPECTED_EOF         = 2,  ///< Unexpected end of formula. (Example: "2+sin(")
-  ecUNEXPECTED_ARG_SEP     = 3,  ///< An unexpected comma has been found. (Example: "1,23")
-  ecUNEXPECTED_ARG         = 4,  ///< An unexpected argument has been found
-  ecUNEXPECTED_VAL         = 5,  ///< An unexpected value token has been found
-  ecUNEXPECTED_VAR         = 6,  ///< An unexpected variable token has been found
-  ecUNEXPECTED_PARENS      = 7,  ///< Unexpected Parenthesis, opening or closing
-  ecUNEXPECTED_STR         = 8,  ///< A string has been found at an inapropriate position
-  ecSTRING_EXPECTED        = 9,  ///< A string function has been called with a different type of argument
-  ecVAL_EXPECTED           = 10, ///< A numerical function has been called with a non value type of argument
-  ecMISSING_PARENS         = 11, ///< Missing parens. (Example: "3*sin(3")
-  ecUNEXPECTED_FUN         = 12, ///< Unexpected function found. (Example: "sin(8)cos(9)")
-  ecUNTERMINATED_STRING    = 13, ///< unterminated string constant. (Example: "3*valueof("hello)")
-  ecTOO_MANY_PARAMS        = 14, ///< Too many function parameters
-  ecTOO_FEW_PARAMS         = 15, ///< Too few function parameters. (Example: "ite(1<2,2)")
-  ecOPRT_TYPE_CONFLICT     = 16, ///< binary operators may only be applied to value items of the same type
-  ecSTR_RESULT             = 17, ///< result is a string
+    //---------------------------------------------------------------------------------------------
+    ParserErrorMsg()
+      :m_vErrMsg(0)
+    {
+      m_vErrMsg.resize(ecCOUNT);
 
-  // Invalid Parser input Parameters
-  ecINVALID_NAME           = 18, ///< Invalid function, variable or constant name.
-  ecINVALID_BINOP_IDENT    = 19, ///< Invalid binary operator identifier
-  ecINVALID_INFIX_IDENT    = 20, ///< Invalid function, variable or constant name.
-  ecINVALID_POSTFIX_IDENT  = 21, ///< Invalid function, variable or constant name.
+      m_vErrMsg[ecUNASSIGNABLE_TOKEN]     = _SL("Unexpected token \"$TOK$\" found at position $POS$.");
+      m_vErrMsg[ecINTERNAL_ERROR]         = _SL("Internal error");
+      m_vErrMsg[ecINVALID_NAME]           = _SL("Invalid function-, variable- or constant name: \"$TOK$\".");
+      m_vErrMsg[ecINVALID_BINOP_IDENT]    = _SL("Invalid binary operator identifier: \"$TOK$\".");
+      m_vErrMsg[ecINVALID_INFIX_IDENT]    = _SL("Invalid infix operator identifier: \"$TOK$\".");
+      m_vErrMsg[ecINVALID_POSTFIX_IDENT]  = _SL("Invalid postfix operator identifier: \"$TOK$\".");
+      m_vErrMsg[ecINVALID_FUN_PTR]        = _SL("Invalid pointer to callback function.");
+      m_vErrMsg[ecEMPTY_EXPRESSION]       = _SL("Expression is empty.");
+      m_vErrMsg[ecINVALID_VAR_PTR]        = _SL("Invalid pointer to variable.");
+      m_vErrMsg[ecUNEXPECTED_OPERATOR]    = _SL("Unexpected operator \"$TOK$\" found at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_EOF]         = _SL("Unexpected end of expression at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_ARG_SEP]     = _SL("Unexpected argument separator at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_PARENS]      = _SL("Unexpected parenthesis \"$TOK$\" at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_FUN]         = _SL("Unexpected function \"$TOK$\" at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_VAL]         = _SL("Unexpected value \"$TOK$\" found at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_VAR]         = _SL("Unexpected variable \"$TOK$\" found at position $POS$");
+      m_vErrMsg[ecUNEXPECTED_ARG]         = _SL("Function arguments used without a function (position: $POS$)");
+      m_vErrMsg[ecMISSING_PARENS]         = _SL("Missing parenthesis");
+      m_vErrMsg[ecTOO_MANY_PARAMS]        = _SL("Too many parameters for function \"$TOK$\" at expression position $POS$");
+      m_vErrMsg[ecTOO_FEW_PARAMS]         = _SL("Too few parameters for function \"$TOK$\" at expression position $POS$");
+      m_vErrMsg[ecDIV_BY_ZERO]            = _SL("Divide by zero");
+      m_vErrMsg[ecDOMAIN_ERROR]           = _SL("Domain error");
+      m_vErrMsg[ecNAME_CONFLICT]          = _SL("Name conflict");
+      m_vErrMsg[ecOPT_PRI]                = _SL("Invalid value for operator priority (must be greater or equal to zero).");
+      m_vErrMsg[ecBUILTIN_OVERLOAD]       = _SL("user defined binary operator \"$TOK$\" conflicts with a built in operator.");
+      m_vErrMsg[ecVAL_EXPECTED]           = _SL("String value used where a numerical argument is expected.");
+      m_vErrMsg[ecGENERIC]                = _SL("Parser error.");
+      m_vErrMsg[ecLOCALE]                 = _SL("Decimal separator is identic to function argument separator.");
+      m_vErrMsg[ecUNEXPECTED_CONDITIONAL] = _SL("The \"$TOK$\" operator must be preceeded by a closing bracket.");
+      m_vErrMsg[ecMISSING_ELSE_CLAUSE]    = _SL("If-then-else operator is missing an else clause");
+      m_vErrMsg[ecMISPLACED_COLON]        = _SL("Misplaced colon at position $POS$");
 
-  ecBUILTIN_OVERLOAD       = 22, ///< Trying to overload builtin operator
-  ecINVALID_FUN_PTR        = 23, ///< Invalid callback function pointer 
-  ecINVALID_VAR_PTR        = 24, ///< Invalid variable pointer 
-  ecEMPTY_EXPRESSION       = 25, ///< The Expression is empty
-  ecNAME_CONFLICT          = 26, ///< Name conflict
-  ecOPT_PRI                = 27, ///< Invalid operator priority
-  // 
-  ecDOMAIN_ERROR           = 28, ///< catch division by zero, sqrt(-1), log(0) (currently unused)
-  ecDIV_BY_ZERO            = 29, ///< Division by zero (currently unused)
-  ecGENERIC                = 30, ///< Generic error
-  ecLOCALE                 = 31, ///< Conflict with current locale
+      #if defined(_DEBUG)
+        for (int i=0; i<ecCOUNT; ++i)
+          if (!m_vErrMsg[i].length())
+            assert(false);
+      #endif
+    }
 
-  ecUNEXPECTED_CONDITIONAL = 32,
-  ecMISSING_ELSE_CLAUSE    = 33, 
-  ecMISPLACED_COLON        = 34,
+    //---------------------------------------------------------------------------------------------
+    ~ParserErrorMsg()
+    {}
 
-  ecUNREASONABLE_NUMBER_OF_COMPUTATIONS = 35,
+    //---------------------------------------------------------------------------------------------
+    static const ParserErrorMsg& Instance()
+    {
+      return m_Instance;
+    }
 
-  // internal errors
-  ecINTERNAL_ERROR         = 36, ///< Internal error of any kind.
-  
-  // The last two are special entries 
-  ecCOUNT,                      ///< This is no error code, It just stores just the total number of error codes
-  ecUNDEFINED              = -1  ///< Undefined message, placeholder to detect unassigned error messages
-};
+    //---------------------------------------------------------------------------------------------
+    TString operator[](unsigned a_iIdx) const
+    {
+      return (a_iIdx<m_vErrMsg.size()) ? m_vErrMsg[a_iIdx] : TString();
+    }
 
-//---------------------------------------------------------------------------
-/** \brief A class that handles the error messages.
-*/
-class ParserErrorMsg
-{
-public:
-    typedef ParserErrorMsg self_type;
 
-    ParserErrorMsg& operator=(const ParserErrorMsg &);
+  private:
+    std::vector<TString>  m_vErrMsg;  ///< A vector with the predefined error messages
+    static const ParserErrorMsg m_Instance;
+
     ParserErrorMsg(const ParserErrorMsg&);
-    ParserErrorMsg();
+    ParserErrorMsg& operator=(const ParserErrorMsg &);
+  };
 
-   ~ParserErrorMsg();
+  template<typename TStr>
+  const ParserErrorMsg<TStr> ParserErrorMsg<TStr>::m_Instance;
 
-    static const ParserErrorMsg& Instance();
-    string_type operator[](unsigned a_iIdx) const;
+  //-----------------------------------------------------------------------------------------------
+  /** \brief Error class of the parser. 
 
-private:
-    std::vector<string_type>  m_vErrMsg;  ///< A vector with the predefined error messages
-    static const self_type m_Instance;    ///< The instance pointer
-};
+    muparser needs its own error class since std::exception does not provides unicode string 
+    messages.
+  */
+  template<typename TString>
+  class ParserError
+  {
+  private:
 
-//---------------------------------------------------------------------------
-/** \brief Error class of the parser. 
-    \author Ingo Berg
+    typedef std::basic_stringstream<typename TString::value_type,
+                                    std::char_traits<typename TString::value_type>,  
+                                    std::allocator<typename TString::value_type> > stringstream_type;
 
-  Part of the math parser package.
-*/
-class ParserError
-{
-private:
+    //---------------------------------------------------------------------------------------------
+    /** \brief Replace all occurences of a substring with another string. */
+    void ReplaceSubString(TString &strSource,
+                          const TString &strFind,
+                          const TString &strReplaceWith)
+    {
+      TString strResult;
+      TString::size_type iPos(0), iNext(0);
 
-    /** \brief Replace all ocuurences of a substring with another string. */
-    void ReplaceSubString( string_type &strSource, 
-                           const string_type &strFind,
-                           const string_type &strReplaceWith);
-    void Reset();
+      for(;;)
+      {
+        iNext = strSource.find(strFind, iPos);
+        strResult.append(strSource, iPos, iNext-iPos);
 
-public:
+        if( iNext==TString::npos )
+          break;
 
-    ParserError();
-    explicit ParserError(EErrorCodes a_iErrc);
-    explicit ParserError(const string_type &sMsg);
-    ParserError( EErrorCodes a_iErrc,
-                 const string_type &sTok,
-                 const string_type &sFormula = string_type(),
-                 int a_iPos = -1);
-    ParserError( EErrorCodes a_iErrc, 
-                 int a_iPos, 
-                 const string_type &sTok);
-    ParserError( const char_type *a_szMsg, 
-                 int a_iPos = -1, 
-                 const string_type &sTok = string_type());
-    ParserError(const ParserError &a_Obj);
-    ParserError& operator=(const ParserError &a_Obj);
-   ~ParserError();
+        strResult.append(strReplaceWith);
+        iPos = iNext + strFind.length();
+      } 
 
-    void SetFormula(const string_type &a_strFormula);
-    const string_type& GetExpr() const;
-    const string_type& GetMsg() const;
-    std::size_t GetPos() const;
-    const string_type& GetToken() const;
-    EErrorCodes GetCode() const;
+      strSource.swap(strResult);
+    }
 
-private:
-    string_type m_strMsg;     ///< The message string
-    string_type m_strFormula; ///< Formula string
-    string_type m_strTok;     ///< Token related with the error
-    int m_iPos;               ///< Formula position related to the error 
-    EErrorCodes m_iErrc;      ///< Error code
-    const ParserErrorMsg &m_ErrMsg;
-};		
+    //---------------------------------------------------------------------------------------------
+    void Reset()
+    {
+      m_sMsg  = _SL("");
+      m_sExpr = _SL("");
+      m_sTok  = _SL("");
+      m_iPos  = -1;
+      m_iErrc = ecUNDEFINED;
+    }
 
+  public:
+
+    //---------------------------------------------------------------------------------------------
+    ParserError()
+      :m_strMsg()
+      ,m_strFormula()
+      ,m_strTok()
+      ,m_iPos(-1)
+      ,m_iErrc(ecUNDEFINED)
+      ,m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {}
+
+    //---------------------------------------------------------------------------------------------
+    explicit ParserError(EErrorCodes /*a_iErrc*/) 
+      :m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {
+      Reset();
+      m_sMsg = _SL("parser error");
+    }
+
+    //---------------------------------------------------------------------------------------------
+    explicit ParserError(const TString &sMsg) 
+      :m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {
+      Reset();
+      m_sMsg = sMsg;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    ParserError(EErrorCodes iErrc,
+                const TString &sTok,
+                const TString &sExpr = TString(_SL("(mathematical expression is not available)")),
+                int iPos = -1)
+      :m_sMsg()
+      ,m_sExpr(sExpr)
+      ,m_sTok(sTok)
+      ,m_iPos(iPos)
+      ,m_iErrc(iErrc)
+      ,m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {
+      m_sMsg = m_ErrMsg[m_iErrc];
+      stringstream_type stream;
+      stream << (int)m_iPos;
+      ReplaceSubString(m_sMsg, _SL("$POS$"), stream.str());
+      ReplaceSubString(m_sMsg, _SL("$TOK$"), m_sTok);
+    }
+
+    //---------------------------------------------------------------------------------------------
+    ParserError(EErrorCodes a_iErrc, 
+                int a_iPos, 
+                const TString &sTok)
+      :m_sMsg()
+      ,m_sExpr()
+      ,m_sTok(sTok)
+      ,m_iPos(iPos)
+      ,m_iErrc(iErrc)
+      ,m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {
+      m_sMsg = m_ErrMsg[m_iErrc];
+      stringstream_type stream;
+      stream << (int)m_iPos;
+      ReplaceSubString(m_sMsg, _SL("$POS$"), stream.str());
+      ReplaceSubString(m_sMsg, _SL("$TOK$"), m_sTok);
+    }
+
+    //---------------------------------------------------------------------------------------------
+    ParserError(const typename TString::value_type *szMsg, int iPos = -1, const TString &sTok = TString()) 
+      :m_sMsg(szMsg)
+      ,m_sExpr()
+      ,m_sTok(sTok)
+      ,m_iPos(iPos)
+      ,m_iErrc(ecGENERIC)
+      ,m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {
+      stringstream_type stream;
+      stream << (int)m_iPos;
+      ReplaceSubString(m_sMsg, _SL("$POS$"), stream.str());
+      ReplaceSubString(m_sMsg, _SL("$TOK$"), m_sTok);
+    }
+
+    //---------------------------------------------------------------------------------------------
+    ParserError(const ParserError &a_Obj)
+      :m_sMsg(a_Obj.m_sMsg)
+      ,m_sExpr(a_Obj.m_sExpr)
+      ,m_sTok(a_Obj.m_sTok)
+      ,m_iPos(a_Obj.m_iPos)
+      ,m_iErrc(a_Obj.m_iErrc)
+      ,m_ErrMsg(ParserErrorMsg<TString>::Instance())
+    {}
+
+    //---------------------------------------------------------------------------------------------
+    ParserError& operator=(const ParserError &a_Obj)
+    {
+      if (this==&a_Obj)
+        return *this;
+
+      m_strMsg = a_Obj.m_strMsg;
+      m_strFormula = a_Obj.m_strFormula;
+      m_strTok = a_Obj.m_strTok;
+      m_iPos = a_Obj.m_iPos;
+      m_iErrc = a_Obj.m_iErrc;
+      return *this;
+    }
+
+    //---------------------------------------------------------------------------------------------
+   ~ParserError()
+    {}
+
+    //---------------------------------------------------------------------------------------------
+    void SetFormula(const TString &a_strFormula)
+    {
+      m_strFormula = a_strFormula;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    const TString& GetExpr() const 
+    {
+      return m_sExpr;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    const TString& GetMsg() const
+    {
+      return m_sMsg;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    std::size_t GetPos() const
+    {
+      return m_iPos;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    const TString& GetToken() const
+    {
+      return m_sTok;
+    }
+
+    //---------------------------------------------------------------------------------------------
+    EErrorCodes GetCode() const
+    {
+      return m_iErrc;
+    }
+
+  private:
+    TString m_sMsg;       ///< The message string
+    TString m_sExpr;      ///< Formula string
+    TString m_sTok;       ///< Token related with the error
+    int m_iPos;           ///< Formula position related to the error 
+    EErrorCodes m_iErrc;  ///< Error code
+    const ParserErrorMsg<TString> &m_ErrMsg;
+  };		
 } // namespace mu
 
 #endif
-

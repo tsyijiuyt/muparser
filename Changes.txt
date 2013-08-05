@@ -9,7 +9,7 @@
 #        \/                       \/            \/      \/            #
 #					  Fast math parser Library    #
 #                                                                     #
-#  Copyright (C) 2013 Ingo Berg                                       #
+#  Copyright (C) 2011 Ingo Berg                                       #
 #                                                                     #
 #  Web:     muparser.beltoforion.de                                   #
 #  e-mail:  muparser@beltoforion.de                                   #
@@ -21,64 +21,21 @@
 History:
 --------
 
-Rev 2.2.4: 08.07.2013
----------------------
-  Changes:
-   * explicit positive sign allowed
-
-  Bugfixes:
-   * String constants did not work properly. Using more than a single one 
-     was impossible.
-	
-Rev 2.2.3: 22.12.2012
----------------------
-
-  Removed features:
-   * build files for msvc2005, borland and watcom compiler were removed
-
-  Bugfixes:
-   * Bugfix for Intel Compilers added: The power operator did not work properly 
-     with Intel C++ composer XE 2011.
-     (see https://sourceforge.net/projects/muparser/forums/forum/462843/topic/5117983/index/page/1)
-   * Issue 3509860: Callbacks of functions with string parameters called twice
-     (see http://sourceforge.net/tracker/?func=detail&aid=3509860&group_id=137191&atid=737979)
-   * Issue 3570423: example1 shows slot number in hexadecimal
-     (see https://sourceforge.net/tracker/?func=detail&aid=3570423&group_id=137191&atid=737979)
-   * Fixes for compiling with the "MUP_MATH_EXCEPTIONS" macro definition:
- 	- division by zero in constant expressions was reported with the code "ec_GENERIC" 
-          instead of "ecDIV_BY_ZERO"
-        - added throwing of "ecDOMAIN_ERROR" to sqrt and log functions
-
-
-Rev 2.2.2: 18.02.2012
----------------------
-  Bugfixes:
-   * Optimizer did'nt work properly for division:
-     (see https://sourceforge.net/projects/muparser/forums/forum/462843/topic/5037825)
-
-Rev 2.2.1: 22.01.2012
----------------------
-  Bugfixes:
-   * Optimizer bug in 64 bit systems fixed
-     (see https://sourceforge.net/projects/muparser/forums/forum/462843/topic/4977977/index/page/1)
-	 
-Rev 2.2.0: 22.01.2012
----------------------
+Rev 2.2.0: 01.01.2012 (Development snapshot)
+--------------------------------------------
   Improvements:
    * Optimizer rewritten and improved. In general: more optimizations are 
      now applied to the bytecode. The downside is that callback Functions 
-     can no longer be flagged as non-optimizable. (The flag is still present 
-     but ignored) This is necessary since the optimizer had to call the 
-     functions in order to precalculate the result (see Bugfixes). These calls 
-     posed a problems for callback functions with side  effects and if-then-else 
-     clauses in general since they undermined the shortcut evaluation prinziple.
+	 can no longer be flagged as non-optimizable. This is necessary since
+	 the optimizer had to call the functions in order to precalculate the
+	 result. These calls posed a problems for callback functions with side 
+	 effects and if-then-else clauses in general since they undermined the
+	 shortcut evaluation prinziple.
 
   Bugfixes:
    * Infix operators where not properly detected in the presence of a constant 
      name starting with an underscore which is a valid character for infix 
      operators too (i.e. "-_pi").
-   * Issue 3463353: Callback functions are called twice during the first call to eval.
-   * Issue 3447007: GetUsedVar unnecessaryly executes callback functions.
 
 
 Rev 2.1.0: 19.11.2011

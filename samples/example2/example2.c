@@ -103,7 +103,7 @@ void Intro(muParserHandle_t hParser)
   printf("  |__|_|  /|____/ |____|    (____  /|__|  /____  > \\___  >|__|    \n");
   printf("        \\/                       \\/            \\/      \\/         \n");
   printf("  Version %s (DLL)\n", mupGetVersion(hParser));
-  printf("  (C) 2013 Ingo Berg\n");
+  printf("  (C) 2011 Ingo Berg\n");
   printf("---------------------------------------\n");
   printf("Commands:\n");
   printf("  list var     - list parser variables\n");
@@ -352,22 +352,22 @@ void Calc()
   mupDefineVar(hParser, "b", &afVarVal[1]);
 
   // Define postfix operators [optional]
-  mupDefinePostfixOprt(hParser, "M", Mega, 0);
-  mupDefinePostfixOprt(hParser, "m", Milli, 0);
+  mupDefinePostfixOprt(hParser, "M", Mega);
+  mupDefinePostfixOprt(hParser, "m", Milli);
 
   // Define infix operator [optional]
-  mupDefineInfixOprt(hParser, "!", Not, 0);
+  mupDefineInfixOprt(hParser, "!", Not);
 
   // Define functions [optional]
 //  mupDefineStrFun(hParser, "query", SampleQuery, 0); // Add an unoptimizeable function 
-  mupDefineFun0(hParser, "zero", ZeroArg, 0);
-  mupDefineFun1(hParser, "rnd", Rnd, 0);             // Add an unoptimizeable function
-  mupDefineFun1(hParser, "rnd2", Rnd, 1); 
-  mupDefineMultFun(hParser, "_sum", Sum, 0);  // "sum" is already a default function
+  mupDefineFun0(hParser, "zero", ZeroArg);
+  mupDefineFun1(hParser, "rnd", Rnd);             // Add an unoptimizeable function
+  mupDefineFun1(hParser, "rnd2", Rnd); 
+  mupDefineMultFun(hParser, "_sum", Sum);  // "sum" is already a default function
 
   // Define binary operators [optional]
-  mupDefineOprt(hParser, "add", Add, 0, muOPRT_ASCT_LEFT, 0);
-  mupDefineOprt(hParser, "mul", Mul, 1, muOPRT_ASCT_LEFT, 0);
+  mupDefineOprt(hParser, "add", Add, 0, muOPRT_ASCT_LEFT);
+  mupDefineOprt(hParser, "mul", Mul, 1, muOPRT_ASCT_LEFT);
 
   while ( fgets(szLine, 99, stdin) )
   {

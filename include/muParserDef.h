@@ -5,7 +5,7 @@
   |  Y Y  \|  |  /|    |     / __ \_|  | \/\___ \ \  ___/ |  | \/
   |__|_|  /|____/ |____|    (____  /|__|  /____  > \___  >|__|   
         \/                       \/            \/      \/        
-  Copyright (C) 2013 Ingo Berg
+  Copyright (C) 2004-2012 Ingo Berg
 
   Permission is hereby granted, free of charge, to any person obtaining a copy of this 
   software and associated documentation files (the "Software"), to deal in the Software
@@ -25,182 +25,152 @@
 #ifndef MUP_DEF_H
 #define MUP_DEF_H
 
+//--- Standard includes ---------------------------------------------------------------------------
+#include <cassert>
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <map>
 
-#include "muParserFixes.h"
+//-------------------------------------------------------------------------------------------------
+#if defined min
+  #undef min
+#endif
 
-/** \file
-    \brief This file contains standard definitions used by the parser.
-*/
+#if defined max
+  #undef max
+#endif
 
-#define MUP_VERSION _T("2.2.4")
-#define MUP_VERSION_DATE _T("20130723; SF")
+//-------------------------------------------------------------------------------------------------
+#define MUP_VERSION      _SL("0.3.4")
+#define MUP_VERSION_DATE _SL("20120714; SF-SVN/BRANCHES")
 
-#define MUP_CHARS _T("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+#define MUP_NAMESPACE_START namespace mp {
+#define MUP_NAMESPACE_END }
 
-/** \brief If this macro is defined mathematical exceptions (div by zero) will be thrown as exceptions. */
-//#define MUP_MATH_EXCEPTIONS
-
-/** \brief Define the base datatype for values.
-
-  This datatype must be a built in value type. You can not use custom classes.
-  It should be working with all types except "int"!
-*/
-#define MUP_BASETYPE double
-
-/** \brief Activate this option in order to compile with OpenMP support. 
-
-  OpenMP is used only in the bulk mode it may increase the performance a bit. 
-*/
-//#define MUP_USE_OPENMP
-
-#if defined(_UNICODE)
-  /** \brief Definition of the basic parser string type. */
-  #define MUP_STRING_TYPE std::wstring
-
-  #if !defined(_T)
-    #define _T(x) L##x
-  #endif // not defined _T
+#if defined(_MSC_VER)
+  #define MUP_FASTCALL __fastcall
+  #define MUP_INLINE __forceinline
 #else
-  #ifndef _T
-  #define _T(x) x
-  #endif
-  
-  /** \brief Definition of the basic parser string type. */
-  #define MUP_STRING_TYPE std::string
+  #define MUP_FASTCALL
+  #define MUP_INLINE 
 #endif
 
 #if defined(_DEBUG)
-  /** \brief Debug macro to force an abortion of the programm with a certain message.
-  */
   #define MUP_FAIL(MSG)     \
           {                 \
             bool MSG=false; \
             assert(MSG);    \
           }
-
-    /** \brief An assertion that does not kill the program.
-
-        This macro is neutralised in UNICODE builds. It's
-        too difficult to translate.
-    */
-    #define MUP_ASSERT(COND)                         \
-            if (!(COND))                             \
-            {                                        \
-              stringstream_type ss;                  \
-              ss << _T("Assertion \"") _T(#COND) _T("\" failed: ") \
-                 << __FILE__ << _T(" line ")         \
-                 << __LINE__ << _T(".");             \
-              throw ParserError( ss.str() );         \
-            }
+/*
+  #define MUP_ASSERT(COND)                          \
+          if (!(COND))                              \
+          {                                         \
+            stringstream_type ss;                   \
+            ss << _SL("Assertion \"")               \
+               << _SL(#COND)                        \
+               << _SL("\" failed: ")                \
+               << __FILE__ << _SL(" line ")         \
+               << __LINE__ << _SL(".");             \
+            throw ParserError<TString>( ss.str() ); \
+          }
+*/
 #else
   #define MUP_FAIL(MSG)
-  #define MUP_ASSERT(COND)
+//  #define MUP_ASSERT(COND)
 #endif
 
+#define MUP_ASSERT(COND)                          \
+        if (!(COND))                              \
+        {                                         \
+          stringstream_type ss;                   \
+          ss << _SL("Assertion \"")               \
+             << _SL(#COND)                        \
+             << _SL("\" failed: ")                \
+             << __FILE__ << _SL(" line ")         \
+             << __LINE__ << _SL(".");             \
+          throw ParserError<TString>( ss.str() ); \
+        }
 
-namespace mu
-{
-#if defined(_UNICODE)
+#define _SL(x) details::string_traits<typename TString::value_type>::select(x, L##x)
+#define _OUT   details::string_traits<typename TString::value_type>::out()
 
-  //------------------------------------------------------------------------------
-  /** \brief Encapsulate wcout. */
-  inline std::wostream& console()
-  {
-    return std::wcout;
-  }
 
-  /** \brief Encapsulate cin. */
-  inline std::wistream& console_in()
-  {
-    return std::wcin;
-  }
-
-#else
-
-  /** \brief Encapsulate cout. 
-  
-    Used for supporting UNICODE more easily.
-  */
-  inline std::ostream& console()
-  {
-    return std::cout;
-  }
-
-  /** \brief Encapsulate cin. 
-
-    Used for supporting UNICODE more easily.
-  */
-  inline std::istream& console_in()
-  {
-    return std::cin;
-  }
-
-#endif
+MUP_NAMESPACE_START
 
   //------------------------------------------------------------------------------
-  /** \brief Bytecode values.
-
-      \attention The order of the operator entries must match the order in ParserBase::c_DefaultOprt!
+  /** \brief Code used to distinguish different hardcoded parsing engines.
   */
-  enum ECmdCode
+  enum EEngineCode
   {
-    // The following are codes for built in binary operators
-    // apart from built in operators the user has the opportunity to
-    // add user defined operators.
-    cmLE            = 0,   ///< Operator item:  less or equal
-    cmGE            = 1,   ///< Operator item:  greater or equal
-    cmNEQ           = 2,   ///< Operator item:  not equal
-    cmEQ            = 3,   ///< Operator item:  equals
-    cmLT            = 4,   ///< Operator item:  less than
-    cmGT            = 5,   ///< Operator item:  greater than
-    cmADD           = 6,   ///< Operator item:  add
-    cmSUB           = 7,   ///< Operator item:  subtract
-    cmMUL           = 8,   ///< Operator item:  multiply
-    cmDIV           = 9,   ///< Operator item:  division
-    cmPOW           = 10,  ///< Operator item:  y to the power of ...
-    cmLAND          = 11,
-    cmLOR           = 12,
-    cmASSIGN        = 13,  ///< Operator item:  Assignment operator
-    cmBO            = 14,  ///< Operator item:  opening bracket
-    cmBC            = 15,  ///< Operator item:  closing bracket
-    cmIF            = 16,  ///< For use in the ternary if-then-else operator
-    cmELSE          = 17,  ///< For use in the ternary if-then-else operator
-    cmENDIF         = 18,  ///< For use in the ternary if-then-else operator
-    cmARG_SEP       = 19,  ///< function argument separator
-    cmVAR           = 20,  ///< variable item
-    cmVAL           = 21,  ///< value item
+    // V - Value entry   : 1 
+    // F - Function call : 0
+    //     Integer     Binary 
+    ecV     =  1,      //       1
+    ecVF    =  2,      //      10
 
-    // For optimization purposes
-    cmVARPOW2,
-    cmVARPOW3,
-    cmVARPOW4,
-    cmVARMUL,
-    cmPOW2,
+    ecVFF   =  4,      //     100
+    ecVVF   =  6,      //     110
 
-    // operators and functions
-    cmFUNC,                ///< Code for a generic function item
-    cmFUNC_STR,            ///< Code for a function with a string parameter
-    cmFUNC_BULK,           ///< Special callbacks for Bulk mode with an additional parameter for the bulk index 
-    cmSTRING,              ///< Code for a string token
-    cmOPRT_BIN,            ///< user defined binary operator
-    cmOPRT_POSTFIX,        ///< code for postfix operators
-    cmOPRT_INFIX,          ///< code for infix operators
-    cmEND,                 ///< end of formula
-    cmUNKNOWN              ///< uninitialized item
+    ecVFFF  =  8,      //    1000
+    ecVFVF  = 10,      //    1010  
+    ecVVFF  = 12,      //    1100
+    ecVVVF  = 14,      //    1110
+
+    ecVFFFF = 16,      //   10000
+    ecVFFVF = 18,      //   10010
+    ecVFVFF = 20,      //   10100   
+    ecVFVVF = 22,      //   10110   
+    ecVVFFF = 24,      //   11000
+    ecVVFVF = 26,      //   11010
+    ecVVVFF = 28,      //   11100
+    ecVVVVF = 30,      //   11110
+
+    ecUNOPTIMIZABLE = 32,
+    ecNO_MUL = 64      // If this flag is set the expression does not have any variable multiplier in VAL_EX tokens.
+
+/*
+    ecVFFFFF = 32,     //  100000
+    ecVFFFVF = 34,     //  100010
+    ecVFFVFF = 36,     //  100100   
+    ecVFFVVF = 38,     //  100110
+    ecVFVFFF = 40,     //  101000
+    ecVFVFVF = 42,     //  101010
+    ecVFVVFF = 44,     //  101100
+
+    ecVVFFFF = 48,     //  110000
+    ecVVFFVF = 50,     //  100010
+    ecVVFVFF = 52,     //  100100   
+    ecVVFVVF = 54,     //  100110
+    ecVVVFFF = 56,     //  101000
+    ecVVVFVF = 58,     //  101010
+    ecVVVVFF = 60,     //  101100
+    ecVVVVVF = 62,     //  101100
+
+    ecUNOPTIMIZABLE = 64
+*/
   };
 
   //------------------------------------------------------------------------------
-  /** \brief Types internally used by the parser.
+  /** \brief Code for expression tokens.
   */
-  enum ETypeCode
+  enum ECmdCode
   {
-    tpSTR  = 0,     ///< String type (Function arguments and constants only, no string variables)
-    tpDBL  = 1,     ///< Floating point variables
-    tpVOID = 2      ///< Undefined type.
+    cmASSIGN        = 0,
+    cmBO            = 1,
+    cmBC            = 2,
+    cmIF            = 3,
+    cmELSE          = 4,
+    cmENDIF         = 5,
+    cmARG_SEP       = 6,
+    cmVAL_EX        = 7,
+    cmVAR           = 8,
+    cmVAL           = 9,
+    cmFUNC          = 10,
+    cmOPRT_BIN,
+    cmOPRT_POSTFIX,
+    cmOPRT_INFIX,
+    cmEND
   };
 
   //------------------------------------------------------------------------------
@@ -211,7 +181,6 @@ namespace mu
   };
 
   //------------------------------------------------------------------------------
-  /** \brief Parser operator precedence values. */
   enum EOprtAssociativity
   {
     oaLEFT  = 0,
@@ -220,149 +189,168 @@ namespace mu
   };
 
   //------------------------------------------------------------------------------
-  /** \brief Parser operator precedence values. */
   enum EOprtPrecedence
   {
-    // binary operators
     prLOR     = 1,
     prLAND    = 2,
-    prLOGIC   = 3,  ///< logic operators
-    prCMP     = 4,  ///< comparsion operators
-    prADD_SUB = 5,  ///< addition
-    prMUL_DIV = 6,  ///< multiplication/division
-    prPOW     = 7,  ///< power operator priority (highest)
-
-    // infix operators
-    prINFIX   = 6, ///< Signs have a higher priority than ADD_SUB, but lower than power operator
-    prPOSTFIX = 6  ///< Postfix operator priority (currently unused)
+    prLOGIC   = 3,
+    prCMP     = 4,
+    prADD_SUB = 5,
+    prMUL_DIV = 6,
+    prPOW     = 7,
+    prINFIX   = 6,
+    prPOSTFIX = 6 
   };
 
   //------------------------------------------------------------------------------
+  enum EErrorCodes
+  {
+    // Formula syntax errors
+    ecUNEXPECTED_OPERATOR    = 0,  ///< Unexpected binary operator found
+    ecUNASSIGNABLE_TOKEN     = 1,  ///< Token cant be identified.
+    ecUNEXPECTED_EOF         = 2,  ///< Unexpected end of formula. (Example: "2+sin(")
+    ecUNEXPECTED_ARG_SEP     = 3,  ///< An unexpected comma has been found. (Example: "1,23")
+    ecUNEXPECTED_ARG         = 4,  ///< An unexpected argument has been found
+    ecUNEXPECTED_VAL         = 5,  ///< An unexpected value token has been found
+    ecUNEXPECTED_VAR         = 6,  ///< An unexpected variable token has been found
+    ecUNEXPECTED_PARENS      = 7,  ///< Unexpected Parenthesis, opening or closing
+    ecVAL_EXPECTED           = 8,  ///< A numerical function has been called with a non value type of argument
+    ecMISSING_PARENS         = 9,  ///< Missing parens. (Example: "3*sin(3")
+    ecUNEXPECTED_FUN         = 10, ///< Unexpected function found. (Example: "sin(8)cos(9)")
+    ecTOO_MANY_PARAMS        = 11, ///< Too many function parameters
+    ecTOO_FEW_PARAMS         = 12, ///< Too few function parameters. (Example: "ite(1<2,2)")
+
+    // Invalid Parser input Parameters
+    ecINVALID_NAME           = 13, ///< Invalid function, variable or constant name.
+    ecINVALID_BINOP_IDENT    = 14, ///< Invalid binary operator identifier
+    ecINVALID_INFIX_IDENT    = 15, ///< Invalid function, variable or constant name.
+    ecINVALID_POSTFIX_IDENT  = 16, ///< Invalid function, variable or constant name.
+
+    ecBUILTIN_OVERLOAD       = 17, ///< Trying to overload builtin operator
+    ecINVALID_FUN_PTR        = 18, ///< Invalid callback function pointer 
+    ecINVALID_VAR_PTR        = 19, ///< Invalid variable pointer 
+    ecEMPTY_EXPRESSION       = 20, ///< The Expression is empty
+    ecNAME_CONFLICT          = 21, ///< Name conflict
+    ecOPT_PRI                = 22, ///< Invalid operator priority
+    // 
+    ecDOMAIN_ERROR           = 23, ///< catch division by zero, sqrt(-1), log(0) (currently unused)
+    ecDIV_BY_ZERO            = 24, ///< Division by zero (currently unused)
+    ecGENERIC                = 25, ///< Generic error
+    ecLOCALE                 = 26, ///< Conflict with current locale
+
+    ecUNEXPECTED_CONDITIONAL = 27,
+    ecMISSING_ELSE_CLAUSE    = 28, 
+    ecMISPLACED_COLON        = 29,
+
+    // internal errors
+    ecINTERNAL_ERROR         = 30, ///< Internal error of any kind.
+  
+    // The last two are special entries 
+    ecCOUNT,                       ///< This is no error code, It just stores just the total number of error codes
+    ecUNDEFINED              = -1  ///< Undefined message, placeholder to detect unassigned error messages
+  };
+
+  //------------------------------------------------------------------------------
+  // Forward declarations
+  template<typename TVal, typename TStr> 
+  class Token;
+
+  template<typename TValue, typename TString>
+  class ParserBase;
+
+  //------------------------------------------------------------------------------
   // basic types
+  template<typename TVal, typename TString>
+  struct parser_types
+  {
+    typedef TVal value_type;
+    typedef void (MUP_FASTCALL *fun_type)(TVal*, int narg);
+    typedef int (*identfun_type)(const typename TString::value_type *sExpr, int *nPos, TVal *fVal);
+    typedef TVal* (*facfun_type)(const typename TString::value_type*, void*);
+    typedef Token<TVal, TString> token_type;
+  };
 
-  /** \brief The numeric datatype used by the parser. 
-  
-    Normally this is a floating point type either single or double precision.
-  */
-  typedef MUP_BASETYPE value_type;
 
-  /** \brief The stringtype used by the parser. 
+  namespace details
+  {
+    //---------------------------------------------------------------------------------------------
+    template<typename T>
+    struct string_traits
+    {
+      static const char* select(const char* sel, const wchar_t*)  { return sel;  }
+      static char select(const char sel, const wchar_t) { return sel;  }
+      static std::ostream& out() { return std::cout; }
+      static std::istream& in()  { return std::cin; }
+    };
 
-    Depends on wether UNICODE is used or not.
-  */
-  typedef MUP_STRING_TYPE string_type;
+    //---------------------------------------------------------------------------------------------
+    template<>
+    struct string_traits<wchar_t>
+    {
+      static const wchar_t* select(const char*, const wchar_t *sel) { return sel; }
+      static wchar_t select(const char, const wchar_t sel) { return sel; }
+      static std::wostream& out() { return std::wcout; }
+      static std::wistream& in()  { return std::wcin; }
+    };
 
-  /** \brief The character type used by the parser. 
-  
-    Depends on wether UNICODE is used or not.
-  */
-  typedef string_type::value_type char_type;
+    /** \brief A class singling out integer types at compile time using 
+               template meta programming.
+    */
+    template<typename T>
+    struct value_traits
+    {
+      static bool IsInteger() { return false; }
+    };
 
-  /** \brief Typedef for easily using stringstream that respect the parser stringtype. */
-  typedef std::basic_stringstream<char_type,
-                                  std::char_traits<char_type>,
-                                  std::allocator<char_type> > stringstream_type;
+    template<>
+    struct value_traits<char>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  // Data container types
+    template<>
+    struct value_traits<short>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  /** \brief Type used for storing variables. */
-  typedef std::map<string_type, value_type*> varmap_type;
-  
-  /** \brief Type used for storing constants. */
-  typedef std::map<string_type, value_type> valmap_type;
-  
-  /** \brief Type for assigning a string name to an index in the internal string table. */
-  typedef std::map<string_type, std::size_t> strmap_type;
+    template<>
+    struct value_traits<int>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  // Parser callbacks
-  
-  /** \brief Callback type used for functions without arguments. */
-  typedef value_type (*generic_fun_type)();
+    template<>
+    struct value_traits<long>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  /** \brief Callback type used for functions without arguments. */
-  typedef value_type (*fun_type0)();
+    template<>
+    struct value_traits<unsigned char>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  /** \brief Callback type used for functions with a single arguments. */
-  typedef value_type (*fun_type1)(value_type);
+    template<>
+    struct value_traits<unsigned short>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  /** \brief Callback type used for functions with two arguments. */
-  typedef value_type (*fun_type2)(value_type, value_type);
+    template<>
+    struct value_traits<unsigned int>
+    {
+      static bool IsInteger() { return true;  }
+    };
 
-  /** \brief Callback type used for functions with three arguments. */
-  typedef value_type (*fun_type3)(value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with four arguments. */
-  typedef value_type (*fun_type4)(value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type5)(value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type6)(value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type7)(value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type8)(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type9)(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*fun_type10)(value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions without arguments. */
-  typedef value_type (*bulkfun_type0)(int, int);
-
-  /** \brief Callback type used for functions with a single arguments. */
-  typedef value_type (*bulkfun_type1)(int, int, value_type);
-
-  /** \brief Callback type used for functions with two arguments. */
-  typedef value_type (*bulkfun_type2)(int, int, value_type, value_type);
-
-  /** \brief Callback type used for functions with three arguments. */
-  typedef value_type (*bulkfun_type3)(int, int, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with four arguments. */
-  typedef value_type (*bulkfun_type4)(int, int, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type5)(int, int, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type6)(int, int, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type7)(int, int, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type8)(int, int, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type9)(int, int, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with five arguments. */
-  typedef value_type (*bulkfun_type10)(int, int, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type, value_type);
-
-  /** \brief Callback type used for functions with a variable argument list. */
-  typedef value_type (*multfun_type)(const value_type*, int);
-
-  /** \brief Callback type used for functions taking a string as an argument. */
-  typedef value_type (*strfun_type1)(const char_type*);
-
-  /** \brief Callback type used for functions taking a string and a value as arguments. */
-  typedef value_type (*strfun_type2)(const char_type*, value_type);
-
-  /** \brief Callback type used for functions taking a string and two values as arguments. */
-  typedef value_type (*strfun_type3)(const char_type*, value_type, value_type);
-
-  /** \brief Callback used for functions that identify values in a string. */
-  typedef int (*identfun_type)(const char_type *sExpr, int *nPos, value_type *fVal);
-
-  /** \brief Callback used for variable creation factory functions. */
-  typedef value_type* (*facfun_type)(const char_type*, void*);
-} // end of namespace
+    template<>
+    struct value_traits<unsigned long>
+    {
+      static bool IsInteger() { return true;  }
+    };
+  } // namespace mp::details
+} // namespace mp
 
 #endif
 

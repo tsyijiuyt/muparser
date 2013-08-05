@@ -26,7 +26,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Static|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Static|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -116,7 +116,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>..\..\lib\muparser32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\samples\example1\example1.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -157,7 +157,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>..\..\lib\muparserd32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\samples\example1\example1.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>..\..\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -221,10 +221,16 @@
     <ClCompile Include="..\..\samples\example1\example1.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="muparser_muParser.vcxproj">
-      <Project>{2a1f639a-7642-57cc-bf97-3ec5b5c89d91}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
+    <ClInclude Include="..\..\include\muParser.h" />
+    <ClInclude Include="..\..\include\muParserBase.h" />
+    <ClInclude Include="..\..\include\muParserBytecode.h" />
+    <ClInclude Include="..\..\include\muParserDef.h" />
+    <ClInclude Include="..\..\include\muParserError.h" />
+    <ClInclude Include="..\..\include\muParserMath.h" />
+    <ClInclude Include="..\..\include\muParserStack.h" />
+    <ClInclude Include="..\..\include\muParserTest.h" />
+    <ClInclude Include="..\..\include\muParserToken.h" />
+    <ClInclude Include="..\..\include\muParserTokenReader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

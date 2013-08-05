@@ -643,15 +643,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\muParserDLL.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\muParserError.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\muParserInt.cpp"
 				>
 			</File>
 			<File
@@ -689,27 +681,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\muParserDLL.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\include\muParserError.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\include\muParserFixes.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\muParserInt.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\include\muParserStack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\include\muParserTemplateMagic.h"
 				>
 			</File>
 			<File
